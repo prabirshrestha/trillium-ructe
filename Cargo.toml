@@ -1,6 +1,6 @@
 [package]
 name = "trillium-ructe"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Prabir Shrestha <mail@prabir.me>"]
 edition = "2018"
 description = "ructe templates for trillium.rs"
@@ -11,6 +11,6 @@ keywords = ["trillium", "framework", "async"]
 categories = ["web-programming::http-server", "web-programming"]
 
 [dependencies]
-log = "0.4.14"
 ructe = "0.13.4"
+thiserror = "1.0.26"
 trillium = "0.1.4"
