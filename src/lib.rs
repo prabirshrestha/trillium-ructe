@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 
 use std::io::Write;
-use trillium::Conn;
+use trillium::{Conn, KnownHeaderName::ContentType};
 
 #[derive(thiserror::Error, Debug)]
 pub enum RucteError {
@@ -29,7 +29,7 @@ where
     F: FnOnce(&mut dyn Write) -> std::io::Result<()>,
 {
     render(
-        conn.with_header(("content-type", "text/html; charset=utf-8")),
+        conn.with_header(ContentType, "text/html; charset=utf-8"),
         call,
     )
 }

@@ -13,4 +13,4 @@ categories = ["web-programming::http-server", "web-programming"]
 [dependencies]
 ructe = "0.13.4"
 thiserror = "1.0.26"
-trillium = "0.1.4"
+trillium = "0.2.0"
