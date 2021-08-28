@@ -12,9 +12,9 @@ edition = "2018"
 build = "src/build.rs"
 
 [dependencies]
-trillium = "0.1.4"
-trillium-ructe = "0.1.1"
-trillium-smol = "0.1.3"
+trillium = "0.2.0"
+trillium-ructe = "0.2.0"
+trillium-smol = "0.2.0"
 
 [build-dependencies]
 ructe = { version = "0.13.4", features = ["sass"] }
@@ -62,7 +62,7 @@ include!(concat!(env!("OUT_DIR"), "/templates.rs"));
 
 fn main() {
     trillium_smol::run(|conn: Conn| async move {
-        render_html_try!(conn, |o| templates::helloworld(o, "html"))
+        render_html_try!(|o| templates::helloworld(o, "html"), conn)
     });
 }
 ```

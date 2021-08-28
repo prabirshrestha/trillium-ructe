@@ -13,7 +13,7 @@ pub enum RucteError {
     },
 }
 
-pub fn render<F>(conn: Conn, call: F) -> Result<Conn, RucteError>
+pub fn render<F>(call: F, conn: Conn) -> Result<Conn, RucteError>
 where
     F: FnOnce(&mut dyn Write) -> std::io::Result<()>,
 {
@@ -24,13 +24,13 @@ where
     }
 }
 
-pub fn render_html<F>(conn: Conn, call: F) -> Result<Conn, RucteError>
+pub fn render_html<F>(call: F, conn: Conn) -> Result<Conn, RucteError>
 where
     F: FnOnce(&mut dyn Write) -> std::io::Result<()>,
 {
     render(
-        conn.with_header(ContentType, "text/html; charset=utf-8"),
         call,
+        conn.with_header(ContentType, "text/html; charset=utf-8"),
     )
 }
 
@@ -48,15 +48,15 @@ fn main() {
         // helloworld.rs.html contents:
         //  @(text: &str)
         //  <h1>@text</h1>
-        render_try!(conn, |o| templates::helloworld(o, "hello world"))
+        render_try!(|o| templates::helloworld(o, "hello world"), conn)
     });
 }
 ```
 */
 #[macro_export]
 macro_rules! render_try {
-    ($conn:expr, $expr:expr) => {
-        match $crate::render($conn, $expr) {
+    ($expr:expr, $conn:expr) => {
+        match $crate::render($expr, $conn) {
             Ok(conn) => conn,
             Err(e) => match e {
                 $crate::RucteError::IoError { source, conn } => {
@@ -81,7 +81,7 @@ fn main() {
         // helloworld.rs.html contents:
         //  @(text: &str)
         //  <h1>@text</h1>
-        render_html_try!(conn, |o| templates::helloworld(o, "hello world"))
+        render_html_try!(|o| templates::helloworld(o, "hello world"), conn)
     });
 }
 
@@ -89,8 +89,8 @@ fn main() {
 */
 #[macro_export]
 macro_rules! render_html_try {
-    ($conn:expr, $expr:expr) => {
-        match $crate::render_html($conn, $expr) {
+    ($expr:expr, $conn:expr) => {
+        match $crate::render_html($expr, $conn) {
             Ok(conn) => conn,
             Err(e) => match e {
                 $crate::RucteError::IoError { source, conn } => {
