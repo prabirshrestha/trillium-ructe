@@ -1,78 +1,12 @@
 #![forbid(unsafe_code)]
-
 use std::io::Write;
 use trillium::{Conn, KnownHeaderName::ContentType};
-
-#[derive(thiserror::Error, Debug)]
-pub enum RucteError {
-    #[error("Failed to render ructe template")]
-    IoError {
-        #[source]
-        source: std::io::Error,
-        conn: Conn,
-    },
-}
-
-pub fn render<F>(call: F, conn: Conn) -> Result<Conn, RucteError>
-where
-    F: FnOnce(&mut dyn Write) -> std::io::Result<()>,
-{
-    let mut buf = Vec::new();
-    match call(&mut buf) {
-        Ok(()) => Ok(conn.ok(buf)),
-        Err(source) => Err(RucteError::IoError { source, conn }),
-    }
-}
-
-pub fn render_html<F>(call: F, conn: Conn) -> Result<Conn, RucteError>
-where
-    F: FnOnce(&mut dyn Write) -> std::io::Result<()>,
-{
-    render(
-        call,
-        conn.with_header(ContentType, "text/html; charset=utf-8"),
-    )
-}
-
-/**
-Renders a template or returns the conn with a 500 status.
-
-```ignore
-use trillium::Conn;
-use trillium_ructe::render_html_try;
-
-include!(concat!(env!("OUT_DIR"), "/templates.rs"));
-
-fn main() {
-    trillium_smol::run(|conn: Conn| async move {
-        // helloworld.rs.html contents:
-        //  @(text: &str)
-        //  <h1>@text</h1>
-        render_try!(|o| templates::helloworld(o, "hello world"), conn)
-    });
-}
-```
-*/
-#[macro_export]
-macro_rules! render_try {
-    ($expr:expr, $conn:expr) => {
-        match $crate::render($expr, $conn) {
-            Ok(conn) => conn,
-            Err(e) => match e {
-                $crate::RucteError::IoError { source, conn } => {
-                    trillium::log::error!("{}:{} render_try error: {}", file!(), line!(), source);
-                    return conn.with_status(500).halt();
-                }
-            },
-        }
-    };
-}
 
 /**
 Renders a template and sets content-type as "text/html; charset=utf-8" or returns the conn with a 500 status.
 ```ignore
 use trillium::Conn;
-use trillium_ructe::render_html_try;
+use trillium_ructe::RucteConnExt;
 
 include!(concat!(env!("OUT_DIR"), "/templates.rs"));
 
@@ -81,28 +15,58 @@ fn main() {
         // helloworld.rs.html contents:
         //  @(text: &str)
         //  <h1>@text</h1>
-        render_html_try!(|o| templates::helloworld(o, "hello world"), conn)
+        conn.render_html(|o| templates::helloworld(o, "hello world"))
     });
 }
 
 ```
 */
-#[macro_export]
-macro_rules! render_html_try {
-    ($expr:expr, $conn:expr) => {
-        match $crate::render_html($expr, $conn) {
-            Ok(conn) => conn,
-            Err(e) => match e {
-                $crate::RucteError::IoError { source, conn } => {
-                    trillium::log::error!(
-                        "{}:{} render_html_try error: {}",
-                        file!(),
-                        line!(),
-                        source
-                    );
-                    return conn.with_status(500).halt();
-                }
-            },
-        }
-    };
+
+trait RucteConnExt {
+    /// Render a ructe template to this conn's body.
+    ///
+    /// Allocates a default buffer size of 1kb
+    fn render<F>(self, render_fn: F) -> Self
+    where
+        F: FnOnce(&mut dyn Write) -> std::io::Result<()>;
+
+    /// Render a ructe template to this conn's body, starting with an
+    /// allocated buffer of the supplied size in bytes.
+    fn render_with_size_estimate<F>(self, render_fn: F, size_estimate: usize) -> Self
+    where
+        F: FnOnce(&mut dyn Write) -> std::io::Result<()>;
+
+    /// Render a ructe template to this conn's body and set a content
+    /// type header of text/html.
+    ///
+    /// Allocates a default buffer size of 1kb.
+    fn render_html<F>(self, render_fn: F) -> Self
+    where
+        F: FnOnce(&mut dyn Write) -> std::io::Result<()>;
+}
+
+impl RucteConnExt for Conn {
+    fn render<F>(self, render_fn: F) -> Self
+    where
+        F: FnOnce(&mut dyn Write) -> std::io::Result<()>,
+    {
+        self.render_with_size_estimate(render_fn, 1024)
+    }
+
+    fn render_html<F>(self, render_fn: F) -> Self
+    where
+        F: FnOnce(&mut dyn Write) -> std::io::Result<()>,
+    {
+        self.render(render_fn)
+            .with_header(ContentType, "text/html; charset=utf-8")
+    }
+
+    fn render_with_size_estimate<F>(self, render_fn: F, size_estimate: usize) -> Self
+    where
+        F: FnOnce(&mut dyn Write) -> std::io::Result<()>,
+    {
+        let mut body = Vec::with_capacity(size_estimate);
+        trillium::conn_try!(render_fn(&mut body), self);
+        self.ok(body)
+    }
 }
