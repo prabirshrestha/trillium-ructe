@@ -22,7 +22,7 @@ fn main() {
 ```
 */
 
-trait RucteConnExt {
+pub trait RucteConnExt {
     /// Render a ructe template to this conn's body.
     ///
     /// Allocates a default buffer size of 1kb
