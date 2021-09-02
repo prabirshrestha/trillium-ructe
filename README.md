@@ -12,9 +12,9 @@ edition = "2018"
 build = "src/build.rs"
 
 [dependencies]
-trillium = "0.2.0"
-trillium-ructe = "0.2.0"
-trillium-smol = "0.2.0"
+trillium = "0.3.0"
+trillium-ructe = "0.3.0"
+trillium-smol = "0.3.0"
 
 [build-dependencies]
 ructe = { version = "0.13.4", features = ["sass"] }
@@ -56,15 +56,15 @@ fn main() -> Result<()> {
 
 ```rust
 use trillium::Conn;
-use trillium_ructe::render_html_try;
+use trillium_ructe::RucteConnExt;
 
 include!(concat!(env!("OUT_DIR"), "/templates.rs"));
 
 fn main() {
     trillium_smol::run(|conn: Conn| async move {
-        render_html_try!(|o| templates::helloworld(o, "html"), conn)
+        conn.render_html(|o| templates::helloworld(o, "html"))
     });
 }
 ```
 
-Use `render_html_try` to render html or `render_try` to render raw template.
+Use `conn.render_html` to render html or `conn.render` to render raw template.
