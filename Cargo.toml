@@ -11,5 +11,5 @@ keywords = ["trillium", "framework", "async"]
 categories = ["web-programming::http-server", "web-programming"]
 
 [dependencies]
-ructe = "0.14.0"
+ructe = "0.15.0"
 trillium = "0.2.0"
