@@ -12,4 +12,4 @@ categories = ["web-programming::http-server", "web-programming"]
 
 [dependencies]
 ructe = "0.17.0"
-trillium = "0.2.10"
+trillium = "0.2.13"
